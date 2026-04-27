@@ -67,8 +67,8 @@ rtl/
 ├── vga_controller.v
 
 constraints/
-├── sdvga.sdc
-├── project.qsf
+├── sd_vga.sdc
+├── sd_vga_de2115.qsf
 ```
 
 ---
