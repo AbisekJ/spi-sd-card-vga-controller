@@ -111,6 +111,3 @@ constraints/
 - Quartus project configuration
 
 ---
-
-## Author
-Abisek J
