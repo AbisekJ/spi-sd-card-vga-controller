@@ -1,0 +1,209 @@
+# =============================================================================
+# FILE: sd_vga_de2115.qsf
+# TARGET: Terasic DE2-115, EP4CE115F29C7
+#
+# ALL PIN NUMBERS FROM THE OFFICIAL TERASIC DE2-115 PIN ASSIGNMENT CSV:
+#   de2_115_golden_sopc.csv  (shipped with the DE2-115 CD / Terasic website)
+#
+# CORRECTION: Previous version wrongly used 10-bit VGA pins.
+#   DE2-115 only connects 8 bits per channel to the FPGA (R[7:0], G[7:0], B[7:0]).
+#   The ADV7123 DAC pins R[9:8]/G[9:8]/B[9:8] are NOT wired to the FPGA.
+#
+# SD MODULE PHYSICAL WIRING (do this before compiling):
+#   GPIO header pin 1  (PIN_AB22) → SD module CS
+#   GPIO header pin 3  (PIN_AC15) → SD module SCK
+#   GPIO header pin 5  (PIN_AB21) → SD module MOSI
+#   GPIO header pin 7  (PIN_Y17)  ← SD module MISO
+#   GPIO header pin 11 (GND)      → SD module GND
+#   GPIO header pin 29 (3.3V)     → SD module VCC
+# =============================================================================
+
+# ── Device ────────────────────────────────────────────────────────────────────
+set_global_assignment -name FAMILY "Cyclone IV E"
+set_global_assignment -name DEVICE EP4CE115F29C7
+set_global_assignment -name TOP_LEVEL_ENTITY top
+set_global_assignment -name PROJECT_REVISION sd_vga_de2115
+
+# ── Source Files ──────────────────────────────────────────────────────────────
+set_global_assignment -name VERILOG_FILE rtl/top.v
+set_global_assignment -name VERILOG_FILE rtl/spi_master.v
+set_global_assignment -name VERILOG_FILE rtl/sd_controller.v
+set_global_assignment -name VERILOG_FILE rtl/sd_loader.v
+set_global_assignment -name VERILOG_FILE rtl/frame_buffer.v
+set_global_assignment -name VERILOG_FILE rtl/vga_controller.v
+# After generating PLL, replace the line above with:
+# set_global_assignment -name QIP_FILE rtl/pll_25mhz.qip
+set_global_assignment -name VERILOG_FILE rtl/pll_25mhz.v
+
+# ── Timing Constraints ────────────────────────────────────────────────────────
+set_global_assignment -name SDC_FILE constraints/sd_vga.sdc
+
+# ── Default I/O Standard ──────────────────────────────────────────────────────
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+
+# =============================================================================
+# CLOCK
+# =============================================================================
+set_location_assignment PIN_Y2  -to CLOCK_50
+
+# =============================================================================
+# RESET — KEY[0] (active LOW push button)
+# =============================================================================
+set_location_assignment PIN_M23 -to KEY[0]
+set_location_assignment PIN_M21 -to KEY[1]
+set_location_assignment PIN_N21 -to KEY[2]
+set_location_assignment PIN_R24 -to KEY[3]
+
+# =============================================================================
+# SD CARD SPI — using GPIO[0..3]
+# GPIO[0]=PIN_AB22, GPIO[1]=PIN_AC15, GPIO[2]=PIN_AB21, GPIO[3]=PIN_Y17
+# =============================================================================
+set_location_assignment PIN_AB22 -to SD_CS_N
+set_location_assignment PIN_AC15 -to SD_SCLK
+set_location_assignment PIN_AB21 -to SD_MOSI
+set_location_assignment PIN_Y17  -to SD_MISO
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_MISO
+
+# =============================================================================
+# VGA — 8 bits per channel (official DE2-115 pin assignments)
+# Source: de2_115_golden_sopc.csv from Terasic
+# =============================================================================
+
+# Red channel [7:0]
+set_location_assignment PIN_H10 -to VGA_R[7]
+set_location_assignment PIN_H8  -to VGA_R[6]
+set_location_assignment PIN_J12 -to VGA_R[5]
+set_location_assignment PIN_G10 -to VGA_R[4]
+set_location_assignment PIN_F12 -to VGA_R[3]
+set_location_assignment PIN_D10 -to VGA_R[2]
+set_location_assignment PIN_E11 -to VGA_R[1]
+set_location_assignment PIN_E12 -to VGA_R[0]
+
+# Green channel [7:0]
+set_location_assignment PIN_C9  -to VGA_G[7]
+set_location_assignment PIN_F10 -to VGA_G[6]
+set_location_assignment PIN_B8  -to VGA_G[5]
+set_location_assignment PIN_C8  -to VGA_G[4]
+set_location_assignment PIN_H12 -to VGA_G[3]
+set_location_assignment PIN_F8  -to VGA_G[2]
+set_location_assignment PIN_G11 -to VGA_G[1]
+set_location_assignment PIN_G8  -to VGA_G[0]
+
+# Blue channel [7:0]
+set_location_assignment PIN_D12 -to VGA_B[7]
+set_location_assignment PIN_D11 -to VGA_B[6]
+set_location_assignment PIN_C12 -to VGA_B[5]
+set_location_assignment PIN_A11 -to VGA_B[4]
+set_location_assignment PIN_B11 -to VGA_B[3]
+set_location_assignment PIN_C11 -to VGA_B[2]
+set_location_assignment PIN_A10 -to VGA_B[1]
+set_location_assignment PIN_B10 -to VGA_B[0]
+
+# Sync and control signals
+set_location_assignment PIN_G13 -to VGA_HS
+set_location_assignment PIN_C13 -to VGA_VS
+set_location_assignment PIN_F11 -to VGA_BLANK_N
+set_location_assignment PIN_C10 -to VGA_SYNC_N
+set_location_assignment PIN_A12 -to VGA_CLK
+
+# =============================================================================
+# RED LEDs (LEDR[17:0], active HIGH)
+# =============================================================================
+set_location_assignment PIN_G19 -to LEDR[0]
+set_location_assignment PIN_F19 -to LEDR[1]
+set_location_assignment PIN_E19 -to LEDR[2]
+set_location_assignment PIN_F21 -to LEDR[3]
+set_location_assignment PIN_F18 -to LEDR[4]
+set_location_assignment PIN_E18 -to LEDR[5]
+set_location_assignment PIN_J19 -to LEDR[6]
+set_location_assignment PIN_H19 -to LEDR[7]
+set_location_assignment PIN_J17 -to LEDR[8]
+set_location_assignment PIN_G17 -to LEDR[9]
+set_location_assignment PIN_J15 -to LEDR[10]
+set_location_assignment PIN_H16 -to LEDR[11]
+set_location_assignment PIN_J16 -to LEDR[12]
+set_location_assignment PIN_H17 -to LEDR[13]
+set_location_assignment PIN_F15 -to LEDR[14]
+set_location_assignment PIN_G15 -to LEDR[15]
+set_location_assignment PIN_G16 -to LEDR[16]
+set_location_assignment PIN_H15 -to LEDR[17]
+
+# GREEN LEDs (LEDG[8:0], active HIGH)
+set_location_assignment PIN_E21 -to LEDG[0]
+set_location_assignment PIN_E22 -to LEDG[1]
+set_location_assignment PIN_E25 -to LEDG[2]
+set_location_assignment PIN_E24 -to LEDG[3]
+set_location_assignment PIN_H21 -to LEDG[4]
+set_location_assignment PIN_G20 -to LEDG[5]
+set_location_assignment PIN_G22 -to LEDG[6]
+set_location_assignment PIN_G21 -to LEDG[7]
+set_location_assignment PIN_F17 -to LEDG[8]
+
+# =============================================================================
+# I/O STANDARDS
+# =============================================================================
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to CLOCK_50
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to KEY[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_CS_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_SCLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_MOSI
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_MISO
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_HS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_VS
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_BLANK_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_SYNC_N
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_CLK
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_R[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_G[0]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[7]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[6]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[5]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[4]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[3]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[2]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[1]
+set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to VGA_B[0]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[0]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[1]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[2]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[3]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[4]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[5]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[6]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[7]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[8]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[9]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[10]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[11]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[12]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[13]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[14]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[15]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[16]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDR[17]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[0]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[1]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[2]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[3]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[4]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[5]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[6]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[7]
+set_instance_assignment -name IO_STANDARD "2.5 V"       -to LEDG[8]
