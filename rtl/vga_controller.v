@@ -1,31 +1,3 @@
-// =============================================================================
-// FILE: vga_controller.v
-// DESC: 640x480 @ 60Hz VGA controller for DE2-115
-//
-// DE2-115 VGA HARDWARE FACTS (verified from official Terasic pin CSV):
-//   - Uses ADV7123 DAC chip (10-bit capable)
-//   - BUT only 8 bits per channel are connected to the FPGA
-//   - VGA_R[7:0], VGA_G[7:0], VGA_B[7:0]  ← 8-bit outputs
-//   - DAC pins R[9:8], G[9:8], B[9:8] are NOT connected on the PCB
-//   - Also requires: VGA_BLANK_N, VGA_SYNC_N, VGA_CLK, VGA_HS, VGA_VS
-//
-// 640x480 @ 60Hz TIMING (25MHz pixel clock):
-//   Horizontal: 640 active + 16 FP + 96 sync + 48 BP = 800 total
-//   Vertical:   480 active + 10 FP +  2 sync + 33 BP = 525 total
-//
-// IMAGE SCALING:
-//   Source image is 320x240. Each pixel displayed 2x2 on screen.
-//   Screen pixel (hc, vc) maps to image pixel (hc/2, vc/2)
-//
-// RGB565 → 8-bit per channel:
-//   R5 (5 bits) → R8 (8 bits): {R5, R5[4:2]}   fill low bits by repeating
-//   G6 (6 bits) → G8 (8 bits): {G6, G6[5:4]}   fill low bits by repeating
-//   B5 (5 bits) → B8 (8 bits): {B5, B5[4:2]}   fill low bits by repeating
-//
-// IMPORTANT: VGA_BLANK_N MUST be driven LOW during blanking intervals.
-//   The ADV7123 suppresses its output when BLANK_N is LOW.
-//   If BLANK_N is tied HIGH permanently, the monitor shows garbage.
-// =============================================================================
 module vga_controller (
     input  wire        pclk,          // 25 MHz pixel clock
     input  wire        rst_n,
